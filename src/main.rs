@@ -1,44 +1,49 @@
+mod minecraft;
+
 use std::env;
 
 use diesel::{PgConnection, Connection};
 use dotenvy::dotenv;
-use rocket::{routes, fs::FileServer, serde::json::{Json, serde_json::json, Value}, get};
+use rocket::{routes, fs::FileServer, serde::json::{Json, serde_json::json, Value}, get, post};
 
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
-    println!("Hello, world!");
-
-   dotenv().ok();
-
-   let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-   PgConnection::establish(&database_url)
-       .unwrap_or_else(|_| panic!("Error Conencting to {}", database_url));
+    println!("Blast-off!");
 
     let _rocket = rocket::build()
-        .mount("/", routes![example])
+        .mount("/", routes![team_leave, team_join, version_check, player_message])
         .launch()
         .await?;
     Ok(())
 
+    // TODO pipe information to a discord bot
 
 }
 
-#[get("/test")]
-fn example() -> Json<Value> {
-    let x = json!({
-            "id": 20,
-            "status": "Active",
-            "type": "AIR CONDITIONING",
-            "category": "",
-            "subcategory": "",
-            "item": "Orifice Tube",
-            "description": "Orifice Tube",
-            "descriptionfull": "Orifice Tube  38623",
-            "qoh": 18,
-            "cost": 1.32,
-            "price": 11.06
-        });
-    
-    Json(x)
+fn connect_to_db() {
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    PgConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error Conencting to {}", database_url));
+}
+
+#[post("/teamjoin", data="<input>")]
+fn team_join(input: Json<minecraft::Team>) {
+    println!("{:?}", input);
+}
+
+#[post("/teamleave", data ="<input>")]
+fn team_leave(input: Json<minecraft::Player>) {
+    println!("{:?}", input);
+}
+
+#[post("/sentmessage", data ="<input>")]
+// fn player_message(input: Json<minecraft::PlayerMsg>) {
+fn player_message(input: Json<minecraft::PlayerMsg>) {
+    println!("{:?}", input);
+}
+#[get("/version")]
+fn version_check() -> rocket::serde::json::Value {
+    json!({ "version": "1.0.0" })
 }

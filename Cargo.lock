@@ -351,6 +351,7 @@ dependencies = [
  "diesel",
  "dotenvy",
  "rocket",
+ "serde",
 ]
 
 [[package]]
