@@ -2,7 +2,7 @@ use std::{env, sync::Arc};
 
 use lazy_static::lazy_static;
 use rocket::async_trait;
-use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, MessageAction}, utils::{MessageBuilder, EmbedMessageBuilding}, http::Http};
+use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
 
 use crate::{bot::commands::{ping, relay_messages_here}, minecraft::PlayerMsg};
@@ -11,6 +11,7 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             println!("Received command interaction: {:#?}", command);
@@ -40,7 +41,7 @@ impl EventHandler for Handler {
         }
     }
     
-    async fn ready(&self, context: Context, ready: Ready) {
+    async fn ready(&self, context: Context, _: Ready) {
 
         let guild_id = GuildId(
             env::var("GUILD_ID")
@@ -79,6 +80,7 @@ pub async fn send_msg_to_discord(message: PlayerMsg) {
         .push_bold(format!("<{}> ", message.player.player_name))
         .push(message.msg)
         .build();
+
 
     // Check if the http context has been set up
     match unsafe { &CONTEXT_HTTP } {
