@@ -5,24 +5,24 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Hash)]
 pub struct Player {
-    uuid: String,
+    pub uuid: String,
     #[serde(rename(deserialize = "playerName"))]
-    player_name: String,
+    pub player_name: String,
     #[serde(rename(deserialize = "universeUuid"))]
-    universe: String,
+    pub universe: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct Team {
-    owner: Player,
-    id: String,
+    pub owner: Player,
+    pub id: String,
     #[serde(rename(deserialize = "universeUuid"))]
-    universe: String,
-    players: HashMap<Player, String>
+    pub universe: String,
+    pub players: HashMap<Player, String>
 }
 
 #[derive(Deserialize, Debug)]
 pub struct PlayerMsg {
-    player: Player,
-    msg: String
+    pub player: Player,
+    pub msg: String
 }
