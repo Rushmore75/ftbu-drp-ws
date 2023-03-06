@@ -28,8 +28,8 @@ pub async fn player_message(input: Json<MinecraftMsg>) {
 }
 
 // Discord -> Minecraft
-#[get("/listenforchats")]
-pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, mut end: Shutdown) -> EventStream![] {
+#[get("/listenforchats/<universe>")]
+pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, universe: String, mut end: Shutdown) -> EventStream![] {
     
     let mut rx = queue.subscribe();
     EventStream! {
@@ -38,14 +38,19 @@ pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, mut end: Shutdown) 
             // the Discord message event.
             let msg = select! {
                 msg = rx.recv() => match msg {
-                    Ok(msg) => msg,
+                    Ok(msg) => {
+                        // if msg.sender.universe == universe {
+                            msg
+                        // } else {
+                            // continue
+                        // }
+                    },
                     Err(RecvError::Closed) => break,
                     Err(RecvError::Lagged(_)) => continue,
                 },
                 _ = &mut end => break,
             };
             
-            // TODO say universe, etc
             info!("Sending \"{}\" to Minecraft.", msg.msg);
             // like return but doesn't exit
             yield Event::json(&msg);

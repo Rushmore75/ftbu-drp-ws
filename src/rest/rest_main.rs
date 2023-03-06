@@ -15,6 +15,8 @@ pub async fn start_rocket() -> Result<(), rocket::Error> {
     let y: &State<Sender<MinecraftMsg>> = State::get(&rocket).expect("Failed to get state.");
 
 
+    // We need a pointer to this so we can add to the queue
+    // without going thru a web request.
     unsafe {
         let ptr = std::ptr::addr_of!(*y);
         STATE = Some(ptr);

@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use rocket::{async_trait, State, error::ErrorKind};
 use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, Message}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
-use tracing::{error, warn};
+use tracing::{error, warn, info};
 
 use crate::{bot::commands::{ping, relay_messages_here}, minecraft::MinecraftMsg, rest::rest_main};
 
@@ -41,6 +41,8 @@ impl EventHandler for Handler {
     async fn message(&self, _: Context, message: Message) {
         let cnl = *RELAY_CHANNEL.read().await;
         
+        if message.author.bot { return; }
+
         // Make sure the relay channel as been set
         match cnl {
             Some(channel) => {
@@ -49,14 +51,16 @@ impl EventHandler for Handler {
                     // Try to get the state queue from rocket
                     match unsafe {rest_main::STATE} {
                         Some(e) => {
-                            let content = message.content;
-                            let sender = message.author.name;
                             match unsafe { &MC_UNIVERSE } {
                                 Some(universe) => {
                                     unsafe {
                                         // Send message to the queue
                                         match e.as_ref() {
                                             Some(x) => {
+                                                let content = message.content;
+                                                let sender = message.author.name;
+                                                
+                                                info!("Attempting to forward Discord message...");
                                                 match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
                                                     Ok(_) => {},
                                                     Err(err) => {
@@ -149,7 +153,7 @@ pub async fn start_bot() {
     // build client
     let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN");
     // Should probably not do all intents, but it's easier
-    let intents = GatewayIntents::GUILD_MESSAGES;
+    let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
     
     let mut client = Client::builder(token, intents)
         .event_handler(Handler)

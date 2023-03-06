@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 pub struct Player {
     pub uuid: String,
     #[serde(rename(deserialize = "playerName"))]
+    #[serde(rename(serialize = "playerName"))]
     pub player_name: String,
     #[serde(rename(deserialize = "universeUuid"))]
+    #[serde(rename(serialize = "universeUuid"))]
     pub universe: String,
 }
 
