@@ -1,11 +1,11 @@
 use std::{env, sync::Arc};
 
 use lazy_static::lazy_static;
-use rocket::async_trait;
-use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId}, utils::MessageBuilder, http::Http};
+use rocket::{async_trait, State};
+use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, Message}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
 
-use crate::{bot::commands::{ping, relay_messages_here}, minecraft::PlayerMsg};
+use crate::{bot::commands::{ping, relay_messages_here}, minecraft::MinecraftMsg, rest::rest_main};
 
 struct Handler;
 
@@ -19,12 +19,7 @@ impl EventHandler for Handler {
             // Read the slash command
             let content = match command.data.name.as_str() {
                 "ping" => ping::run(&command.data.options),
-                "relay-chat-here" => {
-                    let mut x = RELAY_CHANNEL.write().await;
-                    *x = Some(*command.channel_id.as_u64());
-                    println!("Set relay channel to {}", command.channel_id.as_u64());
-                    relay_messages_here::run(&command.data.options)
-                },
+                "relay-chat-here" => relay_messages_here::run(&command.data.options, command.channel_id.as_u64()).await,
                 _ => "not implemented".to_string(),
             };
 
@@ -41,6 +36,41 @@ impl EventHandler for Handler {
         }
     }
     
+    // on message event
+    async fn message(&self, context: Context, message: Message) {
+        let cnl = *RELAY_CHANNEL.read().await;
+        
+        // Make sure the relay channel as been set
+        match cnl {
+            Some(channel) => {
+                // Make sure *this* message is in the relay channel
+                if message.channel_id == channel {
+                    // Try to get the state queue from rocket
+                    match unsafe {rest_main::state} {
+                        Some(e) => {
+                            let content = message.content;
+                            let sender = message.author.name;
+                            match unsafe { &MC_UNIVERSE } {
+                                Some(universe) => {
+                                    unsafe {
+                                        // Send message to the queue
+                                        e.as_ref().unwrap().send(MinecraftMsg::fake_message(sender, content, universe.to_string())).unwrap();
+                                    }
+                                },
+                                None => /* cry */ {}
+                            }
+
+                            
+                        },
+                        None => /* cry */ {},
+                    }
+                }
+            },
+            None => /* cry */ {},
+        }
+
+    }
+
     async fn ready(&self, context: Context, _: Ready) {
 
         let guild_id = GuildId(
@@ -67,7 +97,7 @@ impl EventHandler for Handler {
     
 /// A http context that the message relay can use
 static mut CONTEXT_HTTP: Option<Arc<Http>> = None ; // This should really have a rw lock on it
-
+pub static mut MC_UNIVERSE: Option<String> = None ;
 lazy_static!(
     // TODO read this from a config file (as well)
     /// The channel that Minecraft messages get relayed to
@@ -75,12 +105,11 @@ lazy_static!(
 );
 
 
-pub async fn send_msg_to_discord(message: PlayerMsg) {
+pub async fn send_msg_to_discord(message: &MinecraftMsg) {
     let response = MessageBuilder::new()
-        .push_bold(format!("<{}> ", message.player.player_name))
-        .push(message.msg)
+        .push_bold(format!("<{}> ", message.sender.player_name))
+        .push(message.msg.to_string())
         .build();
-
 
     // Check if the http context has been set up
     match unsafe { &CONTEXT_HTTP } {

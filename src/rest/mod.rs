@@ -1,2 +1,2 @@
 mod pages;
-pub mod interface;
+pub mod rest_main;

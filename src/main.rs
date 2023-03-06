@@ -15,7 +15,7 @@ async fn main() {
     
     // The rest api get's it's own thread
     std::thread::spawn(|| {
-        let rocket = rest::interface::start_rocket();
+        let rocket = rest::rest_main::start_rocket();
         rocket.expect("Rocket Crashed");
     });
 
