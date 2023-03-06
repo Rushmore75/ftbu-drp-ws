@@ -46,7 +46,7 @@ pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, mut end: Shutdown) 
             };
             
             // TODO say universe, etc
-            info!("Sending {} to Minecraft", msg.msg);
+            info!("Sending \"{}\" to Minecraft.", msg.msg);
             // like return but doesn't exit
             yield Event::json(&msg);
         }

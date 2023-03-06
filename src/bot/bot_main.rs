@@ -1,9 +1,10 @@
 use std::{env, sync::Arc};
 
 use lazy_static::lazy_static;
-use rocket::{async_trait, State};
+use rocket::{async_trait, State, error::ErrorKind};
 use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, Message}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
+use tracing::{error, warn};
 
 use crate::{bot::commands::{ping, relay_messages_here}, minecraft::MinecraftMsg, rest::rest_main};
 
@@ -37,7 +38,7 @@ impl EventHandler for Handler {
     }
     
     // on message event
-    async fn message(&self, context: Context, message: Message) {
+    async fn message(&self, _: Context, message: Message) {
         let cnl = *RELAY_CHANNEL.read().await;
         
         // Make sure the relay channel as been set
@@ -46,7 +47,7 @@ impl EventHandler for Handler {
                 // Make sure *this* message is in the relay channel
                 if message.channel_id == channel {
                     // Try to get the state queue from rocket
-                    match unsafe {rest_main::state} {
+                    match unsafe {rest_main::STATE} {
                         Some(e) => {
                             let content = message.content;
                             let sender = message.author.name;
@@ -54,19 +55,27 @@ impl EventHandler for Handler {
                                 Some(universe) => {
                                     unsafe {
                                         // Send message to the queue
-                                        e.as_ref().unwrap().send(MinecraftMsg::fake_message(sender, content, universe.to_string())).unwrap();
+                                        match e.as_ref() {
+                                            Some(x) => {
+                                                match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
+                                                    Ok(_) => {},
+                                                    Err(err) => {
+                                                        error!("Sending to State errored: {}", err)
+                                                    },
+                                                }
+                                            },
+                                            None => { warn!("State is missing, did rocket crash?") },
+                                        }
                                     }
                                 },
-                                None => /* cry */ {}
+                                None => { warn!("Universe is missing, has `/relay-chat-here` been run?") }
                             }
-
-                            
                         },
-                        None => /* cry */ {},
+                        None => { warn!("State is missing, has rocket started?") },
                     }
                 }
             },
-            None => /* cry */ {},
+            None => { /* Message was in irrelevant channel, ignore */ },
         }
 
     }
@@ -97,6 +106,7 @@ impl EventHandler for Handler {
     
 /// A http context that the message relay can use
 static mut CONTEXT_HTTP: Option<Arc<Http>> = None ; // This should really have a rw lock on it
+/// The current mc universe it is using
 pub static mut MC_UNIVERSE: Option<String> = None ;
 lazy_static!(
     // TODO read this from a config file (as well)
@@ -138,7 +148,10 @@ pub async fn start_bot() {
     tracing_subscriber::fmt::init();
     // build client
     let token = env::var("DISCORD_TOKEN").expect("Expected DISCORD_TOKEN");
-    let mut client = Client::builder(token, GatewayIntents::empty())
+    // Should probably not do all intents, but it's easier
+    let intents = GatewayIntents::GUILD_MESSAGES;
+    
+    let mut client = Client::builder(token, intents)
         .event_handler(Handler)
         // .event_handler(cRelay)
         .await

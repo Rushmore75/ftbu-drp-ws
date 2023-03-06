@@ -1,9 +1,8 @@
 use crate::{rest::pages::{team_leave, team_join, version_check, player_message, listen_for_chats}, minecraft::MinecraftMsg};
-use lazy_static::lazy_static;
 use rocket::{routes, State};
 use tokio::sync::broadcast::{channel, Sender};
 
-pub static mut state: Option<*const State<Sender<MinecraftMsg>>> = None;
+pub static mut STATE: Option<*const State<Sender<MinecraftMsg>>> = None;
 
 #[rocket::main]
 pub async fn start_rocket() -> Result<(), rocket::Error> {
@@ -18,13 +17,12 @@ pub async fn start_rocket() -> Result<(), rocket::Error> {
 
     unsafe {
         let ptr = std::ptr::addr_of!(*y);
-        state = Some(ptr);
+        STATE = Some(ptr);
     }
 
     let _r = rocket.launch().await?;
 
-    unsafe { state = None; }
-
+    unsafe { STATE = None; }
 
     Ok(())
  
