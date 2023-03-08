@@ -49,16 +49,15 @@ impl EventHandler for Handler {
                 // Make sure *this* message is in the relay channel
                 if message.channel_id == channel {
                     // Try to get the state queue from rocket
-                    match unsafe {rest_main::STATE} {
+                    match unsafe { rest_main::STATE } {
                         Some(e) => {
                             match unsafe { &MC_UNIVERSE } {
                                 Some(universe) => {
-                                    unsafe {
-                                        // Send message to the queue
-                                        match e.as_ref() {
-                                            Some(x) => {
-                                                let content = message.content;
-                                                let sender = message.author.name;
+                                    // Send message to the queue
+                                    match unsafe { e.as_ref() } {
+                                        Some(x) => {
+                                            let content = message.content;
+                                            let sender = message.author.name;
                                                 
                                                 debug!("Attempting to forward Discord message...");
                                                 match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
