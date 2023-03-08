@@ -23,6 +23,26 @@ pub struct Team {
     pub players: HashMap<Player, String>
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PlayerUpdate {
+    #[serde(default = "default_player")]
+    pub player: Player,
+    pub team: Team,
+    pub status: String
+}
+
+fn default_player() -> Player {
+    Player { uuid: "".to_owned(), player_name: "".to_owned(), universe: "".to_owned() }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum Status {
+    Rank,
+    Leave,
+    Join,
+    Disband
+}
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct MinecraftMsg {

@@ -3,7 +3,7 @@ use serenity::model::Permissions;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 use tracing::info;
 
-use crate::bot::bot_main::{RELAY_CHANNEL, self};
+use crate::{bot::bot_main::{RELAY_CHANNEL, self, MC_UNIVERSE}, config};
 
 pub async fn run(options: &[CommandDataOption], channel_id: &u64) -> String {
     let mut x = RELAY_CHANNEL.write().await;
@@ -19,6 +19,9 @@ pub async fn run(options: &[CommandDataOption], channel_id: &u64) -> String {
             None => {}, 
         };   
     });
+
+    // tokio::fs::write("./config.json", )
+
     String::from("Noted.")
 }
 

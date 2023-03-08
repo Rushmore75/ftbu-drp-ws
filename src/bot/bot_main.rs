@@ -1,10 +1,10 @@
 use std::{env, sync::Arc};
 
 use lazy_static::lazy_static;
-use rocket::{async_trait, State, error::ErrorKind};
+use rocket::{async_trait};
 use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, Message}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
-use tracing::{error, warn, info};
+use tracing::{error, warn, info, debug};
 
 use crate::{bot::commands::{ping, relay_messages_here}, minecraft::MinecraftMsg, rest::rest_main};
 
@@ -60,11 +60,11 @@ impl EventHandler for Handler {
                                                 let content = message.content;
                                                 let sender = message.author.name;
                                                 
-                                                info!("Attempting to forward Discord message...");
+                                                debug!("Attempting to forward Discord message...");
                                                 match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
                                                     Ok(_) => {},
                                                     Err(err) => {
-                                                        error!("Sending to State errored: {}", err)
+                                                        error!("Sending to State errored: {}. This is probably because the server has no one listening for messages.", err)
                                                     },
                                                 }
                                             },
@@ -111,7 +111,8 @@ impl EventHandler for Handler {
 /// A http context that the message relay can use
 static mut CONTEXT_HTTP: Option<Arc<Http>> = None ; // This should really have a rw lock on it
 /// The current mc universe it is using
-pub static mut MC_UNIVERSE: Option<String> = None ;
+pub static mut MC_UNIVERSE: Option<String> = None ; // This is a bottle neck point for multi-server use. Might
+                                                    // want to hashmap pointers to the queue to the universe uuid.
 lazy_static!(
     // TODO read this from a config file (as well)
     /// The channel that Minecraft messages get relayed to
@@ -137,7 +138,7 @@ pub async fn send_msg_to_discord(message: &MinecraftMsg) {
                         .await
                         .expect("Failed to send message to discord.");
                 },
-                None => {println!("Relay Channel not setup!")},
+                None => {warn!("Relay Channel not setup!")},
             }
         },
         None => {}

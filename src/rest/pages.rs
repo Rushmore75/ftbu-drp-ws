@@ -1,25 +1,26 @@
 use rocket::{post, serde::json::{Json, serde_json::json}, get, State, response::stream::{EventStream, Event}, tokio::select, Shutdown};
 use tokio::sync::broadcast::{Sender, error::RecvError};
-use tracing::info;
+use tracing::{info, debug};
 
-use crate::{minecraft::{Team, Player, MinecraftMsg}, bot::bot_main};
+use crate::{minecraft::{Team, Player, MinecraftMsg, PlayerUpdate}, bot::bot_main};
 
 
-#[post("/teamjoin", data="<input>")]
-pub fn team_join(input: Json<Team>) {
+#[post("/updatePlayer", data="<input>")]
+pub fn team_join(input: Json<PlayerUpdate>) {
+    /*
+    This will get called on when:
+        Player joins team
+        Player gets promoted / demoted
+        Player creates (and joins) team 
+     */
     println!("{:?}", input);
 }
 
-#[post("/teamleave", data ="<input>")]
-pub fn team_leave(input: Json<Player>) {
-    println!("{:?}", input);
-}
 #[get("/version")]
-
 pub fn version_check() -> rocket::serde::json::Value {
-    json!({ "version": "1.0.0" })
+    // api version, if the mod wants to check.
+    json!({ "version": "2.0.0" })
 }
-
 
 // Minecraft -> Discord
 #[post("/sentmessage", data ="<input>")]
@@ -39,11 +40,13 @@ pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, universe: String, m
             let msg = select! {
                 msg = rx.recv() => match msg {
                     Ok(msg) => {
-                        // if msg.sender.universe == universe {
+                        if msg.sender.universe == format!("\"{}\"", universe) {
+                            debug!("Found correct universe.");
                             msg
-                        // } else {
-                            // continue
-                        // }
+                        } else {
+                            debug!("Message for a different universe...");
+                            continue
+                        }
                     },
                     Err(RecvError::Closed) => break,
                     Err(RecvError::Lagged(_)) => continue,
