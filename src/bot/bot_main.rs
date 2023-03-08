@@ -59,16 +59,15 @@ impl EventHandler for Handler {
                                             let content = message.content;
                                             let sender = message.author.name;
                                                 
-                                                debug!("Attempting to forward Discord message...");
-                                                match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
-                                                    Ok(_) => {},
-                                                    Err(err) => {
-                                                        error!("Sending to State errored: {}. This is probably because the server has no one listening for messages.", err)
-                                                    },
-                                                }
-                                            },
-                                            None => { warn!("State is missing, did rocket crash?") },
-                                        }
+                                            debug!("Attempting to forward Discord message...");
+                                            match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
+                                                Ok(_) => {},
+                                                Err(err) => {
+                                                    error!("Sending to State errored: {}. This is probably because the server has no one listening for messages.", err)
+                                                },
+                                            }
+                                        },
+                                        None => { warn!("State is missing, did rocket crash?") },
                                     }
                                 },
                                 None => { warn!("Universe is missing, has `/relay-chat-here` been run?") }
@@ -80,8 +79,9 @@ impl EventHandler for Handler {
             },
             None => { /* Message was in irrelevant channel, ignore */ },
         }
-
     }
+
+    
 
     async fn ready(&self, context: Context, _: Ready) {
 
