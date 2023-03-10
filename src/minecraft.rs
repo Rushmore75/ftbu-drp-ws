@@ -25,23 +25,49 @@ pub struct Team {
 
 #[derive(Deserialize, Debug)]
 pub struct PlayerUpdate {
-    #[serde(default = "default_player")]
-    pub player: Player,
-    pub team: Team,
-    pub status: String
+    pub player: Option<Player>,
+    pub team: Option<Team>,
 }
 
 fn default_player() -> Player {
     Player { uuid: "".to_owned(), player_name: "".to_owned(), universe: "".to_owned() }
 }
 
+
+#[derive(Deserialize, Debug)]
+pub struct Event {
+    /// Who the event is happening to
+    pub receiver: Option<PlayerUpdate>,
+    /// Who caused the event 
+    pub sender: Option<PlayerUpdate>,
+    #[serde(rename(deserialize = "status"))]
+    pub event_type: EventType,
+
+}
+
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE")]
-pub enum Status {
+pub enum EventType {
+    // Teams
     Rank,
-    Leave,
-    Join,
-    Disband
+    #[serde(rename(deserialize = "LEAVE"))]
+    TeamLeave,
+    #[serde(rename(deserialize = "JOIN"))]
+    TeamJoin,
+    Disband,
+    // Server
+    #[serde(rename(deserialize = "SERVER_STOP"))]
+    ServerStop,
+    #[serde(rename(deserialize = "SERVER_START"))]
+    ServerStart,
+    // Player
+    #[serde(rename(deserialize = "PLAYER_LOGIN"))]
+    PlayerLogin,
+    #[serde(rename(deserialize = "PLAYER_LOGOUT"))]
+    PlayerLogout,
+    #[serde(rename(deserialize = "PLAYER_DEATH"))]
+    PlayerDeath,
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
@@ -50,6 +76,56 @@ pub struct MinecraftMsg {
     #[serde(rename(serialize = "player"))]
     pub sender: Player,
     pub msg: String
+}
+
+pub fn team_name_or_unknown(team: &Option<PlayerUpdate>) -> &str {
+     let unknown = "An Unknown Team";
+    match &team {
+        Some(t) => {
+            match &t.team {
+                Some(name) => {
+                    &name.id
+                },
+                None => {
+                    unknown
+                },                    
+            }
+        },
+        None => {
+            unknown
+        },
+    }
+
+}
+
+pub fn player_name_or_unknown(player: &Option<PlayerUpdate>) -> &str {
+    let unknown = "An Unknown Player";
+    match &player {
+        Some(sender) => {
+            match &sender.player {
+                Some(name) => {
+                    &name.player_name
+                },
+                None => {
+                    unknown
+                },
+            }
+        },
+        None => {
+            unknown
+        },
+    }
+}
+
+impl PlayerUpdate {
+    fn get_universe(&self) -> Option<&str> {
+        match &self.player {
+            Some(p) => {
+                Some(&p.universe)
+            },
+            None => None,
+        }
+    }
 }
 
 
@@ -68,6 +144,13 @@ impl MinecraftMsg {
         Self {
             msg: message,
             sender: Player::fake_player(author, universe),
+        }
+    }
+    
+    pub fn server_message(message: String, universe: String) -> Self {
+        Self {
+            msg: message,
+            sender: Player::fake_player("".to_owned(), universe)
         }
     }
 }

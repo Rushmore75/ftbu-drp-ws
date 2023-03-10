@@ -1,8 +1,8 @@
-use rocket::{post, serde::json::{Json, serde_json::json}, get, State, response::stream::{EventStream, Event}, tokio::select, Shutdown};
+use rocket::{post, serde::json::{Json, serde_json::json}, get, State, response::stream::{EventStream}, tokio::select, Shutdown};
 use tokio::sync::broadcast::{Sender, error::RecvError};
 use tracing::{info, debug};
 
-use crate::{minecraft::{Team, Player, MinecraftMsg, PlayerUpdate}, bot::bot_main};
+use crate::{minecraft::{MinecraftMsg, PlayerUpdate, Event, EventType, player_name_or_unknown, team_name_or_unknown}, bot::bot_main};
 
 
 #[post("/updatePlayer", data="<input>")]
@@ -19,8 +19,72 @@ pub fn team_join(input: Json<PlayerUpdate>) {
 #[get("/version")]
 pub fn version_check() -> rocket::serde::json::Value {
     // api version, if the mod wants to check.
-    json!({ "version": "2.0.0" })
+    json!({ "version": "3.0.0" })
 }
+
+
+#[post("/sendevent/<universe>", data="<event>")]
+pub async fn minecraft_event(event: Json<Event>, universe: String) {
+    println!("{:?}", event);
+    let message: String = match event.event_type {
+        EventType::Rank=>{
+            "rank change... TODO: this msg".to_owned()
+        },
+        EventType::TeamLeave => {
+            let team_name = team_name_or_unknown(&event.sender); 
+            let player_name = player_name_or_unknown(&event.sender); 
+            format!("{} left {}", player_name, team_name)
+        }, 
+        EventType::TeamJoin => {
+            let team_name = team_name_or_unknown(&event.sender); 
+            let player_name = player_name_or_unknown(&event.sender); 
+            format!("{} joined {}", player_name, team_name)
+        },
+        EventType::Disband => {
+            let unknown = "An Unknown Team";
+
+            let name = match &event.sender {
+                Some(e) => {
+                    match &e.team {
+                        Some(t) => {
+                            &t.id
+                        },
+                        None => {
+                            unknown
+                        },
+                    }
+                },
+                None=> {
+                    unknown
+                },
+            };
+
+            format!("{} has disbanded!", unknown)
+        }, 
+        EventType::ServerStop => {
+            "Server has stopped".to_owned()
+        },
+        EventType::ServerStart => {
+            "Server has started".to_owned()
+        },
+        EventType::PlayerLogin => {
+            let name = player_name_or_unknown(&event.sender);
+            format!("{} has joined the game!", name)
+        },
+        EventType::PlayerLogout => {
+            let name = player_name_or_unknown(&event.sender);
+            format!("{} has left the game.", name)
+        },
+        EventType::PlayerDeath => {
+            let player_name = player_name_or_unknown(&event.sender);
+            let attacker_name = player_name_or_unknown(&event.receiver);
+
+            format!("{} was killed by {}", player_name, attacker_name)
+        },
+    };
+    bot_main::send_msg_to_discord(&MinecraftMsg::server_message(message, universe)).await;
+}
+
 
 // Minecraft -> Discord
 #[post("/sentmessage", data ="<input>")]
@@ -56,7 +120,7 @@ pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, universe: String, m
             
             info!("Sending \"{}\" to Minecraft.", msg.msg);
             // like return but doesn't exit
-            yield Event::json(&msg);
+            yield rocket::response::stream::Event::json(&msg);
         }
     }
 }
