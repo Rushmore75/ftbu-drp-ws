@@ -43,6 +43,8 @@ pub async fn minecraft_event(event: Json<Event>, universe: String) {
         EventType::Disband => {
             let unknown = "An Unknown Team";
 
+            // &event.
+
             let name = match &event.sender {
                 Some(e) => {
                     match &e.team {
@@ -59,7 +61,7 @@ pub async fn minecraft_event(event: Json<Event>, universe: String) {
                 },
             };
 
-            format!("{} has disbanded!", unknown)
+            format!("{} has disbanded!", name)
         }, 
         EventType::ServerStop => {
             "Server has stopped".to_owned()

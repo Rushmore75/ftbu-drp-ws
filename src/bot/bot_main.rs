@@ -43,6 +43,9 @@ impl EventHandler for Handler {
         
         if message.author.bot { return; }
 
+        // message.content.contains("ENCYCLOPEDIA OF COMMON DISEASES");
+        // message.delete(context)
+
         // Make sure the relay channel as been set
         match cnl {
             Some(channel) => {
