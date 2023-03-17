@@ -13,7 +13,11 @@ pub async fn run(options: &[CommandDataOption], channel_id: &u64) -> String {
     let _ = &options.iter().for_each(|f| {
         match &f.value {
             Some(uuid) => {
-                unsafe { bot_main::MC_UNIVERSE = Some(uuid.to_string()); }
+                let string = uuid.to_string();
+                let len = string.len(); 
+                
+                // remove quotes arround value
+                unsafe { bot_main::MC_UNIVERSE = Some(string[1..len-1].to_string()); }
                 info!("Set universe to {}", uuid.to_string());
             },
             None => {}, 

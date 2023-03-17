@@ -106,7 +106,7 @@ pub fn listen_for_chats(queue: &State<Sender<MinecraftMsg>>, universe: String, m
             let msg = select! {
                 msg = rx.recv() => match msg {
                     Ok(msg) => {
-                        if msg.sender.universe == format!("\"{}\"", universe) {
+                        if msg.sender.universe == universe {
                             debug!("Found correct universe.");
                             msg
                         } else {
