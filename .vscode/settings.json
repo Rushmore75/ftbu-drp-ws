@@ -1,0 +1,16 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "172.17.0.2",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "friendly fire",
+            "database": "ftbu",
+            "username": "postgres"
+        }
+    ],
+    "cSpell.words": [
+        "Insertable"
+    ]
+}
