@@ -29,11 +29,6 @@ pub struct PlayerUpdate {
     pub team: Option<Team>,
 }
 
-fn default_player() -> Player {
-    Player { uuid: "".to_owned(), player_name: "".to_owned(), universe: "".to_owned() }
-}
-
-
 #[derive(Deserialize, Debug)]
 pub struct Event {
     /// Who the event is happening to
@@ -44,7 +39,6 @@ pub struct Event {
     pub event_type: EventType,
 
 }
-
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "UPPERCASE")]

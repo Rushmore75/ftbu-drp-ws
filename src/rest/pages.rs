@@ -41,26 +41,7 @@ pub async fn minecraft_event(event: Json<Event>, universe: String) {
             format!("{} joined {}", player_name, team_name)
         },
         EventType::Disband => {
-            let unknown = "An Unknown Team";
-
-            // &event.
-
-            let name = match &event.sender {
-                Some(e) => {
-                    match &e.team {
-                        Some(t) => {
-                            &t.id
-                        },
-                        None => {
-                            unknown
-                        },
-                    }
-                },
-                None=> {
-                    unknown
-                },
-            };
-
+            let name = team_name_or_unknown(&event.sender);
             format!("{} has disbanded!", name)
         }, 
         EventType::ServerStop => {

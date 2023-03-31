@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use rocket::{async_trait};
 use serenity::{Client, prelude::{GatewayIntents, EventHandler, Context}, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, ChannelId, Message}, utils::MessageBuilder, http::Http};
 use tokio::sync::RwLock;
-use tracing::{error, warn, info, debug};
+use tracing::{error, warn, debug};
 
 use crate::{bot::commands::{ping, relay_messages_here}, minecraft::MinecraftMsg, rest::rest_main};
 
@@ -43,44 +43,38 @@ impl EventHandler for Handler {
         
         if message.author.bot { return; }
 
-        // message.content.contains("ENCYCLOPEDIA OF COMMON DISEASES");
-        // message.delete(context)
-
         // Make sure the relay channel as been set
-        match cnl {
-            Some(channel) => {
-                // Make sure *this* message is in the relay channel
-                if message.channel_id == channel {
-                    // Try to get the state queue from rocket
-                    match unsafe { rest_main::STATE } {
-                        Some(e) => {
-                            match unsafe { &MC_UNIVERSE } {
-                                Some(universe) => {
-                                    // Send message to the queue
-                                    match unsafe { e.as_ref() } {
-                                        Some(x) => {
-                                            let content = message.content;
-                                            let sender = message.author.name;
-                                                
-                                            debug!("Attempting to forward Discord message...");
-                                            match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
-                                                Ok(_) => {},
-                                                Err(err) => {
-                                                    error!("Sending to State errored: {}. This is probably because the server has no one listening for messages.", err)
-                                                },
-                                            }
-                                        },
-                                        None => { warn!("State is missing, did rocket crash?") },
-                                    }
-                                },
-                                None => { warn!("Universe is missing, has `/relay-chat-here` been run?") }
-                            }
-                        },
-                        None => { warn!("State is missing, has rocket started?") },
-                    }
+        if let Some(channel) = cnl {
+            // Make sure *this* message is in the relay channel
+            if message.channel_id == channel {
+                // Try to get the state queue from rocket
+                match unsafe { rest_main::STATE } {
+                    Some(e) => {
+                        match unsafe { &MC_UNIVERSE } {
+                            Some(universe) => {
+                                // Send message to the queue
+                                match unsafe { e.as_ref() } {
+                                    Some(x) => {
+                                        let content = message.content;
+                                        let sender = message.author.name;
+                                            
+                                        debug!("Attempting to forward Discord message...");
+                                        match x.send(MinecraftMsg::fake_message(sender, content, universe.to_string())) {
+                                            Ok(_) => {},
+                                            Err(err) => {
+                                                error!("Sending to State errored: {}. This is probably because the server has no one listening for messages.", err)
+                                            },
+                                        }
+                                    },
+                                    None => { warn!("State is missing, did rocket crash?") },
+                                }
+                            },
+                            None => { warn!("Universe is missing, has `/relay-chat-here` been run?") }
+                        }
+                    },
+                    None => { warn!("State is missing, has rocket started?") },
                 }
-            },
-            None => { /* Message was in irrelevant channel, ignore */ },
+            }
         }
     }
 

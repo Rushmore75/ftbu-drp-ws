@@ -109,12 +109,12 @@ fn insert_team() {
     }
 }
 
-
 #[test]
 fn insert_user() {
     let connection = &mut connect_to_db();
 
     create_team(connection, "team_name", 18).unwrap();
+    // TODO need to delete items after test
 
     match create_user(connection, "name", 18) {
         Ok(o) => println!("{}", o),

@@ -3,7 +3,7 @@ use serenity::model::Permissions;
 use serenity::model::prelude::interaction::application_command::CommandDataOption;
 use tracing::info;
 
-use crate::{bot::bot_main::{RELAY_CHANNEL, self, MC_UNIVERSE}, config};
+use crate::bot::bot_main::{RELAY_CHANNEL, self,};
 
 pub async fn run(options: &[CommandDataOption], channel_id: &u64) -> String {
     let mut x = RELAY_CHANNEL.write().await;
@@ -16,7 +16,7 @@ pub async fn run(options: &[CommandDataOption], channel_id: &u64) -> String {
                 let string = uuid.to_string();
                 let len = string.len(); 
                 
-                // remove quotes arround value
+                // remove the quotes around value
                 unsafe { bot_main::MC_UNIVERSE = Some(string[1..len-1].to_string()); }
                 info!("Set universe to {}", uuid.to_string());
             },

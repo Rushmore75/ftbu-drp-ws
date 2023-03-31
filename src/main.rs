@@ -2,11 +2,9 @@ mod minecraft;
 mod config;
 mod bot;
 mod rest;
+mod db;
+mod schema;
 
-
-use std::env;
-
-use diesel::{PgConnection, Connection};
 use dotenvy::dotenv;
 use tracing::debug;
 
@@ -24,10 +22,4 @@ async fn main() {
     // The discord bot can have this thread.
     let serenity = bot::bot_main::start_bot();
     serenity.await;
-}
-
-fn connect_to_db() {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error Conencting to {}", database_url));
 }
